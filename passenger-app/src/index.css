@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+/* CityBus — modern light UI */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --color-cb-page: #eef2f7;
+  --color-cb-card: #ffffff;
+  --color-cb-muted: #f1f5f9;
+  --color-cb-border: #e2e8f0;
+  --color-cb-border-strong: #cbd5e1;
+  --color-cb-text: #0f172a;
+  --color-cb-text-secondary: #64748b;
+  --color-cb-text-tertiary: #94a3b8;
+
+  --color-cb-brand: #2563eb;
+  --color-cb-brand-hover: #1d4ed8;
+  --color-cb-brand-soft: #eff6ff;
+  --color-cb-brand-text: #1d4ed8;
+
+  --color-cb-map-line: #93c5fd;
+  --color-cb-bar: #3b82f6;
+
+  --color-cb-green-bg: #ecfdf5;
+  --color-cb-green-text: #047857;
+  --color-cb-amber-bg: #fffbeb;
+  --color-cb-amber-text: #b45309;
+  --color-cb-red-bg: #fef2f2;
+  --color-cb-red-text: #b91c1c;
+  --color-cb-red-border: #fecaca;
+  --color-cb-seat-booked: #fecaca;
+  --color-cb-seat-booked-border: #f87171;
+  --color-cb-danger: #ef4444;
+  --color-cb-purple-bg: #f5f3ff;
+  --color-cb-purple-text: #5b21b6;
+
+  --radius-cb-lg: 14px;
+  --radius-cb-md: 10px;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen min-w-[320px] font-sans text-cb-text antialiased;
+    background: linear-gradient(165deg, #e8f0fc 0%, #f1f5f9 38%, #f8fafc 100%);
+    background-attachment: fixed;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  button {
+    @apply font-sans;
+  }
+
+  input,
+  select {
+    @apply font-sans;
+  }
+}
