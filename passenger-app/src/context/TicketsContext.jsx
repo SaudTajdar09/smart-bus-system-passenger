@@ -20,13 +20,14 @@ export function TicketsProvider({ children }) {
           from: payload.from,
           to: payload.to,
           seats: [...payload.seats],
-          seat: payload.seats[0] ?? '—',
+          seat: payload.seats[0] ?? 'ï¿½',
           date: payload.date,
           time: payload.time,
           fare: payload.fare,
           status: 'active',
           bookedAt,
           expiresAt,
+          qrPayload: payload.id, // QR code encodes the ticket ID
         }
         return [newTicket, ...demoted]
       })

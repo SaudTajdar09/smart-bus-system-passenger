@@ -1,0 +1,13 @@
+{
+  "name": "citybus-ticket-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ticket-server.js",
+    "dev": "node ticket-server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  }
+}

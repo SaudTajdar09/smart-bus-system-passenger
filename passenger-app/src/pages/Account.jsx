@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { SectionTitle } from '../components/common/SectionTitle.jsx'
 import { DemoNote } from '../components/common/DemoNote.jsx'
+import { ProfileUpdateModal } from '../components/common/ProfileUpdateModal.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import { useLocalState } from '../hooks/useLocalState.js'
 import { USER, PASSES, PASS_TYPES } from '../data/cityBusData.js'
@@ -16,12 +17,13 @@ export function Account() {
   const [rechargeHistory, setRechargeHistory] = useLocalState('citybus-wallet-recharges', [])
   const [amount, setAmount] = useState('250')
   const [message, setMessage] = useState('')
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
 
   const profile = useMemo(
     () => ({
       name: user?.name ?? USER.name,
-      email: 'passenger@demo.com',
-      phone: '+91 90000 12345',
+      email: user?.email || 'passenger@demo.com',
+      phone: user?.phone || '+91 90000 12345',
       role: 'Passenger',
       college: USER.college,
     }),
@@ -51,7 +53,15 @@ export function Account() {
       <DemoNote>Manage profile, pass options, and wallet recharge.</DemoNote>
 
       <div className={card}>
-        <div className="mb-3 text-sm font-semibold text-cb-text">Profile details</div>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-cb-text">Profile details</span>
+          <button
+            onClick={() => setShowUpdateModal(true)}
+            className="rounded-lg bg-cb-brand px-3 py-1 text-xs font-semibold text-white hover:bg-cb-brand-hover transition"
+          >
+            ✏️ Edit
+          </button>
+        </div>
         <div className="space-y-2 text-sm">
           <p><span className="font-semibold text-cb-text">Name:</span> {profile.name}</p>
           <p><span className="font-semibold text-cb-text">Role:</span> {profile.role}</p>
@@ -161,6 +171,11 @@ export function Account() {
           ))}
         </div>
       </div>
+
+      {/* Profile Update Modal */}
+      {showUpdateModal && (
+        <ProfileUpdateModal onClose={() => setShowUpdateModal(false)} />
+      )}
     </>
   )
 }

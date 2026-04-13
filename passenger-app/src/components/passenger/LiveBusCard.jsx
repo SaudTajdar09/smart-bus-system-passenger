@@ -5,6 +5,7 @@ export function LiveBusCard({ bus }) {
   const route = ROUTES.find((r) => r.id === bus.route)
   const pct = Math.round((bus.occupancy / bus.capacity) * 100)
   const barColor = pct > 80 ? '#ef4444' : pct > 60 ? '#f59e0b' : '#2563eb'
+  const boardedCount = bus.boardedCount || 0
 
   return (
     <div className="mb-4 rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.05] backdrop-blur-sm">
@@ -30,7 +31,8 @@ export function LiveBusCard({ bus }) {
       <div className="mt-2 flex justify-between text-[11px] font-medium text-cb-text-secondary">
         <span>Occupancy</span>
         <span>
-          {bus.occupancy}/{bus.capacity}
+          {bus.occupancy}/{bus.capacity} 
+          {boardedCount > 0 && <span className="ml-1 text-emerald-600">(✓ {boardedCount} boarded)</span>}
         </span>
       </div>
     </div>

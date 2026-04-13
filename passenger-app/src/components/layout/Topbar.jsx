@@ -19,7 +19,7 @@ export function Topbar() {
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-slate-100/90 px-3 py-1 text-[11px] font-semibold text-cb-text-secondary">
-            {user?.role === 'passenger' ? 'Passenger' : 'User'}
+            {user?.name ? user.name.split(' ')[0] : 'Passenger'}
           </span>
           <button
             type="button"

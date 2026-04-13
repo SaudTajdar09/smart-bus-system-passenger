@@ -2,11 +2,11 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useApp } from '../../hooks/useApp.js'
 
 const items = [
-  { to: '/', label: 'Home', icon: '??' },
-  { to: '/book', label: 'Book', icon: '??' },
-  { to: '/tickets', label: 'Tickets', icon: '???' },
-  { to: '/track', label: 'Track', icon: '??' },
-  { to: '/account', label: 'Account', icon: '??' },
+  { to: '/', label: 'Home', icon: '🏠' },
+  { to: '/book', label: 'Book', icon: '🎫' },
+  { to: '/tickets', label: 'Tickets', icon: '🎟️' },
+  { to: '/track', label: 'Track', icon: '📍' },
+  { to: '/account', label: 'Account', icon: '👤' },
 ]
 
 export function BottomNav() {

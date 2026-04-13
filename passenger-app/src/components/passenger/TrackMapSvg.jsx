@@ -82,7 +82,7 @@ export function TrackMapSvg() {
           )
         })}
         <text x={10} y={395} fontSize={10} fill="var(--color-cb-text-tertiary)">
-          Bengaluru Transit Network (simulated)
+          Uttar Pradesh Transit Network (simulated)
         </text>
       </svg>
     </div>

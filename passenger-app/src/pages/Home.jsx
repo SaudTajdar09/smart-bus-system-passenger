@@ -4,20 +4,23 @@ import { CityBadge } from '../components/ui/CityBadge.jsx'
 import { USER, BUSES, ROUTES } from '../data/cityBusData.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { useTicketsPartitioned } from '../hooks/useTickets.js'
+import { useLiveOccupancy } from '../hooks/useLiveOccupancy.js'
 import { passengerSeatSummary } from '../utils/ticketDisplay.js'
+import { useNavigate } from 'react-router-dom'
 
 const card =
   'mb-4 rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.05] backdrop-blur-sm'
 
 export function Home() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { active } = useTicketsPartitioned()
   const activeTicket = active[0]
 
   const bus = BUSES[0]
   const route = ROUTES.find((r) => r.id === bus.route)
-  const pct = Math.round((bus.occupancy / bus.capacity) * 100)
-  const dash = `${(bus.occupancy / bus.capacity) * 201} 201`
+  const { occupancy, capacity, percentage } = useLiveOccupancy(bus.route, bus.id)
+  const dash = `${(occupancy / capacity) * 201} 201`
   const seatSummary = activeTicket ? passengerSeatSummary(activeTicket) : null
 
   return (
@@ -76,8 +79,8 @@ export function Home() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-[28px] font-bold tracking-tight text-cb-text">
-              {bus.occupancy}
-              <span className="text-base font-semibold text-cb-text-secondary">/{bus.capacity}</span>
+              {occupancy}
+              <span className="text-base font-semibold text-cb-text-secondary">/{capacity}</span>
             </div>
             <div className="text-xs text-cb-text-secondary">passengers on board</div>
           </div>
@@ -96,7 +99,7 @@ export function Home() {
               transform="rotate(-90 40 40)"
             />
             <text x="40" y="44" textAnchor="middle" fontSize="14" fontWeight="600" fill="#2563eb">
-              {pct}%
+              {percentage}%
             </text>
           </svg>
         </div>
@@ -112,6 +115,23 @@ export function Home() {
           <div className="text-[11px] opacity-90">Monthly Student Pass — {USER.college}</div>
           <div className="mt-3 text-[11px] opacity-75">Valid till 30 Apr 2026 · PASS-2026-0441</div>
         </div>
+      </div>
+
+      {/* Emergency SOS Card */}
+      <div className={`${card} border-red-100 bg-gradient-to-br from-red-50 to-red-50/50`}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="mb-1 text-sm font-semibold text-red-900">Need Help?</div>
+            <p className="text-xs text-red-700">Contact emergency services instantly</p>
+          </div>
+          <span className="text-2xl">🆘</span>
+        </div>
+        <button
+          onClick={() => navigate('/emergency')}
+          className="mt-3 w-full rounded-full bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700 transition shadow-md shadow-red-600/30"
+        >
+          Open Emergency Alert System
+        </button>
       </div>
     </>
   )

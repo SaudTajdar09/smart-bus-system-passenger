@@ -27,7 +27,7 @@ export function TicketListCard({ ticket, routeName, onViewDetails, detailsOpen =
       </div>
       <div className="mb-3 flex flex-wrap justify-between gap-2 text-sm text-cb-text-secondary">
         <span>
-          {ticket.date} · {ticket.time}
+          {ticket.date} ï¿½ {ticket.time}
         </span>
         <span className="font-medium text-cb-text">{line}</span>
       </div>
@@ -46,7 +46,7 @@ export function TicketListCard({ ticket, routeName, onViewDetails, detailsOpen =
       ) : (
         <>
           <div className="rounded-xl bg-slate-100/90 py-3 text-center text-[13px] text-cb-text-secondary">
-            Ticket used — journey completed
+            Ticket used ï¿½ journey completed
           </div>
           <button
             type="button"
@@ -64,7 +64,7 @@ export function TicketListCard({ ticket, routeName, onViewDetails, detailsOpen =
                 <span className="font-semibold text-cb-text">Booked:</span> {formatDateTime(ticket.bookedAt)}
               </p>
               <p>
-                <span className="font-semibold text-cb-text">Expired:</span> {ticket.expiresAt ? formatDateTime(ticket.expiresAt) : '—'}
+                <span className="font-semibold text-cb-text">Expired:</span> {ticket.expiresAt ? formatDateTime(ticket.expiresAt) : 'ï¿½'}
               </p>
               <p>
                 <span className="font-semibold text-cb-text">Fare:</span> {formatInr(ticket.fare)}

@@ -10,16 +10,37 @@ import { PaymentMethodList } from '../components/passenger/PaymentMethodList.jsx
 import { QRTicketBlock } from '../components/passenger/QRTicketBlock.jsx'
 import { ROUTES } from '../data/cityBusData.js'
 import { useApp } from '../hooks/useApp.js'
+import { useAuth } from '../hooks/useAuth.js'
 import { useTickets } from '../hooks/useTickets.js'
+import { useSyncedTickets } from '../hooks/useSyncedTickets.js'
 import { formatInr } from '../utils/helpers.js'
 import { fareForSegment, isValidStopPair } from '../utils/tripFare.js'
 import { addHours, formatBookingDate, formatBookingTime } from '../utils/ticketTime.js'
+import { saveTicket } from '../utils/ticketStorage.js'
 
 const PLATFORM_FEE = 2
 const CONFIRM_STEP = 4
 
+// Validation helper functions
+function validateRouteSelected(route) {
+  return route !== null && route !== undefined
+}
+
+function validateStopsSelected(boardingIndex, alightingIndex, stopsValid) {
+  return stopsValid
+}
+
+function validateSeatsSelected(seats) {
+  return seats.length > 0
+}
+
+function validatePaymentSelected(payment) {
+  return payment !== null && payment !== undefined && payment !== ''
+}
+
 export function Book() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const {
     activeBookingStep,
     setActiveBookingStep,
@@ -39,10 +60,17 @@ export function Book() {
   } = useApp()
 
   const { addBookingTicket } = useTickets()
+  const { addBookedTicket } = useSyncedTickets()
   const [payBusy, setPayBusy] = useState(false)
 
   const stops = selectedRoute?.stops ?? []
   const stopsValid = isValidStopPair(boardingStopIndex, alightingStopIndex, stops.length)
+  
+  // Validation states for each step
+  const isStep0Valid = validateRouteSelected(selectedRoute)
+  const isStep1Valid = validateStopsSelected(boardingStopIndex, alightingStopIndex, stopsValid)
+  const isStep2Valid = validateSeatsSelected(selectedSeats)
+  const isStep3Valid = validatePaymentSelected(selectedPayment)
 
   function handleBoard(i) {
     setBoardingStopIndex(i)
@@ -61,12 +89,11 @@ export function Book() {
   const tripFare = unitFare * seatCount
   const total = tripFare + PLATFORM_FEE
 
-  function processPayment() {
+  async function processPayment() {
     if (!selectedRoute || !stopsValid) return
     setPayBusy(true)
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
       const seats = selectedSeats.length ? [...selectedSeats] : ['14C']
-      const ticketId = `TKT-${Date.now()}`
       const from = selectedRoute.stops[boardingStopIndex]
       const to = selectedRoute.stops[alightingStopIndex]
       const now = new Date()
@@ -75,6 +102,29 @@ export function Book() {
       const date = formatBookingDate(now)
       const time = formatBookingTime(now)
 
+      // First, save to API - this generates the authoritative ticket ID
+      const savedTicket = await saveTicket({
+        route: selectedRoute.id,
+        from,
+        to,
+        seat: seats[0],
+        seats,
+        fare: tripFare,
+        date,
+        time,
+        passengerName: user?.name || 'Passenger', // Include passenger name in API
+        createdFrom: 'app', // Mark as app-booked
+      })
+
+      if (!savedTicket) {
+        setPayBusy(false)
+        return
+      }
+
+      // Use the actual stored ticket ID (which has the random suffix)
+      const ticketId = savedTicket.id
+
+      // Now save to app context (Passenger App) with the SAME ID
       addBookingTicket({
         id: ticketId,
         routeId: selectedRoute.id,
@@ -86,6 +136,20 @@ export function Book() {
         fare: tripFare,
         bookedAt,
         expiresAt,
+      })
+
+      // Sync to localStorage for other apps (Conductor & Depot)
+      // Use the API ticket ID so they match in enrichment
+      addBookedTicket({
+        id: ticketId, // Use API ticket ID so enrichment works
+        route: selectedRoute.id,
+        from,
+        to,
+        seat: seats[0],
+        seats,
+        fare: tripFare,
+        passengerName: user?.name || 'Passenger',
+        createdFrom: 'app', // Mark as app-booked (vs manual)
       })
 
       setBookingConfirmation({
@@ -108,10 +172,10 @@ export function Book() {
     return (
       <div className="py-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-3xl shadow-inner shadow-emerald-100">
-          OK
+          âœ“
         </div>
-        <div className="mb-1 text-xl font-semibold tracking-tight text-cb-text">Booking confirmed</div>
-        <p className="mb-8 text-sm text-cb-text-secondary">Your QR ticket is ready</p>
+        <div className="mb-1 text-xl font-semibold tracking-tight text-cb-text">Step 5: Booking confirmed!</div>
+        <p className="mb-8 text-sm text-cb-text-secondary">Your QR ticket is ready. Show it to the driver.</p>
         <QRTicketBlock
           id={bookingConfirmation.id}
           routeName={bookingConfirmation.routeName}
@@ -147,6 +211,9 @@ export function Book() {
 
       {activeBookingStep === 0 && (
         <div className="space-y-3">
+          <div className="mb-3">
+            <p className="text-xs font-medium text-cb-text-secondary">Step 1: Select route</p>
+          </div>
           {ROUTES.map((r) => (
             <RouteOptionCard
               key={r.id}
@@ -167,7 +234,7 @@ export function Book() {
         <div className="rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.06] backdrop-blur-sm">
           <div className="mb-4 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-cb-text-secondary">Route</p>
+              <p className="text-xs font-medium text-cb-text-secondary">Step 2: Select stops</p>
               <p className="text-sm font-semibold tracking-tight text-cb-text">{selectedRoute.name}</p>
             </div>
             <button
@@ -193,7 +260,7 @@ export function Book() {
           <div className="mt-5 rounded-xl bg-slate-50/90 px-3 py-2.5 text-center text-sm">
             <span className="text-cb-text-secondary">Trip fare </span>
             <span className="font-bold text-cb-text">{formatInr(unitFare)}</span>
-            <span className="text-cb-text-tertiary"> / seat · </span>
+            <span className="text-cb-text-tertiary"> / seat ï¿½ </span>
             <span className="text-cb-text-secondary">{selectedRoute.stops[boardingStopIndex]}</span>
             <span className="mx-1 text-cb-text-tertiary">-&gt;</span>
             <span className="text-cb-text-secondary">{selectedRoute.stops[alightingStopIndex]}</span>
@@ -201,7 +268,8 @@ export function Book() {
           <div className="mt-4 flex justify-end">
             <button
               type="button"
-              disabled={!stopsValid}
+              disabled={!isStep1Valid}
+              title={!isStep1Valid ? 'Please select valid boarding and alighting stops' : ''}
               className="rounded-full bg-cb-brand px-5 py-2 text-xs font-semibold text-white shadow-md shadow-cb-brand/20 disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => setActiveBookingStep(2)}
             >
@@ -215,7 +283,7 @@ export function Book() {
         <div className="rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.06] backdrop-blur-sm">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs text-cb-text-secondary">Trip</p>
+              <p className="text-xs font-medium text-cb-text-secondary">Step 3: Select seats</p>
               <p className="text-sm font-semibold text-cb-text">
                 {selectedRoute.stops[boardingStopIndex]} -&gt; {selectedRoute.stops[alightingStopIndex]}
               </p>
@@ -226,7 +294,7 @@ export function Book() {
           </div>
           <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2 text-xs text-cb-text-secondary">
             <span className="font-medium text-cb-text">{selectedRoute.name}</span>
-            <span className="mx-2 text-cb-text-tertiary">·</span>
+            <span className="mx-2 text-cb-text-tertiary">ï¿½</span>
             {formatInr(unitFare)} per seat
           </div>
           <SeatMapCity routeId={selectedRoute.id} selectedSeats={selectedSeats} onToggle={toggleSeat} />
@@ -237,7 +305,8 @@ export function Book() {
             </span>
             <button
               type="button"
-              disabled={selectedSeats.length === 0}
+              disabled={!isStep2Valid}
+              title={!isStep2Valid ? 'Please select at least one seat' : ''}
               className="rounded-full bg-cb-brand px-5 py-2 text-xs font-semibold text-white shadow-md shadow-cb-brand/20 disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => setActiveBookingStep(3)}
             >
@@ -250,7 +319,7 @@ export function Book() {
       {activeBookingStep === 3 && selectedRoute && (
         <div className="rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.06] backdrop-blur-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-cb-text">Payment</span>
+            <span className="text-sm font-semibold text-cb-text">Step 4: Payment</span>
             <button type="button" className={backBtn} onClick={() => setActiveBookingStep(2)}>
               Back
             </button>
@@ -261,15 +330,18 @@ export function Book() {
               {selectedRoute.stops[boardingStopIndex]} -&gt; {selectedRoute.stops[alightingStopIndex]}
             </span>
           </div>
-          <DemoNote>Demo — No real payment will be charged</DemoNote>
-          <PaymentMethodList selectedId={selectedPayment} onSelect={setSelectedPayment} />
-          <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+          <DemoNote>Demo ï¿½ No real payment will be charged</DemoNote>
+          <PaymentMethodList selectedId={selectedPayment} onSelect={setSelectedPayment} />          {!isStep3Valid && (
+            <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-800">
+              âš  Please select a payment method to continue
+            </div>
+          )}          <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
           <div className="mb-2 flex justify-between text-sm">
             <span className="text-cb-text-secondary">
-              Fare × {seatCount} seat{seatCount !== 1 ? 's' : ''}
+              Fare ï¿½ {seatCount} seat{seatCount !== 1 ? 's' : ''}
             </span>
             <span>
-              {formatInr(unitFare)} × {seatCount}
+              {formatInr(unitFare)} ï¿½ {seatCount}
             </span>
           </div>
           <div className="mb-2 flex justify-between text-sm">
@@ -287,11 +359,12 @@ export function Book() {
           <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
           <button
             type="button"
-            disabled={payBusy || !stopsValid}
+            disabled={payBusy || !isStep3Valid}
+            title={!isStep3Valid ? 'Please select a payment method' : ''}
             className="w-full rounded-full bg-cb-brand py-3 text-sm font-semibold text-white shadow-lg shadow-cb-brand/25 transition hover:bg-cb-brand-hover disabled:opacity-50"
             onClick={processPayment}
           >
-            {payBusy ? 'Processing…' : `Pay ${formatInr(total)}`}
+            {payBusy ? 'Processingï¿½' : `Pay ${formatInr(total)}`}
           </button>
         </div>
       )}

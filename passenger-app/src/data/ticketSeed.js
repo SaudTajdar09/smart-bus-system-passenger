@@ -18,6 +18,7 @@ export function buildInitialTickets() {
       status: t.status,
       bookedAt,
       expiresAt: t.status === 'active' ? addHours(bookedAt, 3) : null,
+      qrPayload: t.id, // QR code encodes the ticket ID
     }
   })
 }
