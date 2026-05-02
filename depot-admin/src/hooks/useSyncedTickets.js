@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import { 
-  getAllTickets, 
-  onTicketsChange,
-  computeTicketStats 
-} from '../utils/sharedTicketStorage.js'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+const TICKETS_API_URL = `${API_BASE_URL}/api/tickets`
+
+function computeTicketStats(tickets = []) {
+  return {
+    totalTickets: tickets.length,
+    bookedTickets: tickets.filter((t) => t.status === 'booked').length,
+    boardedTickets: tickets.filter((t) => t.status === 'boarded').length,
+    totalRevenue: tickets.reduce((sum, t) => sum + (t.fare || 0), 0),
+    totalPassengers: tickets.filter((t) => t.status === 'boarded').length,
+  }
+}
 
 /**
  * Hook for Depot Admin App to read tickets and compute statistics
@@ -18,24 +26,30 @@ export function useSyncedTickets() {
     totalPassengers: 0,
   })
 
-  // Load initial tickets on mount
   useEffect(() => {
-    const initialTickets = getAllTickets()
-    setTickets(initialTickets)
-    setStats(computeTicketStats(initialTickets))
-    console.log('✅ Depot loaded initial tickets:', initialTickets.length)
-  }, [])
+    let isActive = true
 
-  // Subscribe to real-time ticket changes from Passenger/Conductor apps
-  useEffect(() => {
-    const unsubscribe = onTicketsChange((updatedTickets) => {
-      setTickets(updatedTickets)
-      const newStats = computeTicketStats(updatedTickets)
-      setStats(newStats)
-      console.log('✅ Depot dashboard updated - Boarded:', newStats.boardedTickets, 'Revenue: ₹', newStats.totalRevenue)
-    })
+    const pollTickets = async () => {
+      try {
+        const response = await fetch(TICKETS_API_URL)
+        if (!response.ok) return
+        const apiTickets = await response.json()
+        if (!isActive) return
+        setTickets(apiTickets)
+        const newStats = computeTicketStats(apiTickets)
+        setStats(newStats)
+      } catch {
+        // Keep previous values during transient API failures.
+      }
+    }
 
-    return unsubscribe
+    pollTickets()
+    const interval = setInterval(pollTickets, 3000)
+
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
   }, [])
 
   // Get revenue by route
@@ -63,6 +77,6 @@ export function useSyncedTickets() {
     stats,
     getRevenueByRoute,
     getBoardedByRoute,
-    getAllTickets: () => getAllTickets(),
+    getAllTickets: () => tickets,
   }
 }

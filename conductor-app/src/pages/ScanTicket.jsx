@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button.jsx'
 import { useConductor } from '../hooks/useConductor.js'
 import { useSyncedTickets } from '../hooks/useSyncedTickets.js'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
 export function ScanTicket() {
   const { currentRoute } = useConductor()
   const { boardPassenger } = useSyncedTickets()
@@ -18,7 +20,7 @@ export function ScanTicket() {
     setIsProcessing(true)
     try {
       // Fetch the ticket from the API
-      const response = await fetch(`http://localhost:3001/api/tickets?search=${ticketId}`)
+      const response = await fetch(`${API_BASE_URL}/api/tickets?search=${ticketId}`)
       const tickets = await response.json()
       const ticket = tickets.find((t) => t.id === ticketId)
 
@@ -52,7 +54,7 @@ export function ScanTicket() {
         setScannedTicket(null)
       } else {
         // Valid ticket for current route - board the passenger
-        const updateResponse = await fetch(`http://localhost:3001/api/tickets/${ticketId}`, {
+        const updateResponse = await fetch(`${API_BASE_URL}/api/tickets/${ticketId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'boarded', scanTime: new Date().toISOString() }),

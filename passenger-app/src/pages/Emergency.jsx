@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth.js'
 import { SectionTitle } from '../components/common/SectionTitle.jsx'
 import { saveAlertToStorage } from '../utils/alertStorage.js'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
 const card = 'mb-4 rounded-2xl border border-white/60 bg-white/90 p-5 shadow-lg shadow-slate-900/[0.05] backdrop-blur-sm'
 
 export function Emergency() {
@@ -30,7 +32,7 @@ export function Emergency() {
     if (alert) {
       // Cross-app sync: publish alert to shared backend (works across different app ports)
       try {
-        await fetch('http://localhost:3001/api/alerts', {
+        await fetch(`${API_BASE_URL}/api/alerts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(alert),

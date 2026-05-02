@@ -5,7 +5,8 @@ import {
   computeAlertStats,
 } from '../utils/alertStorage.js'
 
-const ALERTS_API_URL = 'http://localhost:3001/api/alerts'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+const ALERTS_API_URL = `${API_BASE_URL}/api/alerts`
 
 /**
  * Hook for Depot Admin to listen to emergency alerts

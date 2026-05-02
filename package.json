@@ -1,13 +1,12 @@
 {
-  "name": "citybus-ticket-server",
+  "name": "citybus-project",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node ticket-server.js",
-    "dev": "node ticket-server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^4.22.1"
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:start": "npm --prefix backend run start",
+    "backend:seed": "npm --prefix backend run seed",
+    "dev": "npm run backend:dev",
+    "start": "npm run backend:start"
   }
 }

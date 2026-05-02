@@ -2,6 +2,8 @@ import React, { createContext, useState, useEffect, useMemo, useCallback } from 
 import { useSyncedTickets } from '../hooks/useSyncedTickets.js'
 import { useSyncedAlerts } from '../hooks/useSyncedAlerts.js'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
 export const DepotContext = createContext()
 
 export function DepotProvider({ children }) {
@@ -38,143 +40,23 @@ export function DepotProvider({ children }) {
     [alertIncidents, incidents],
   )
 
-  // Load initial data from localStorage
+  // Load initial data from API (shared backend source of truth)
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        // Load buses
-        const storedBuses = localStorage.getItem('depot_buses')
-        if (storedBuses) {
-          setBuses(JSON.parse(storedBuses))
-        } else {
-          // Initialize with dummy buses matching passenger app
-          const dummyBuses = [
-            {
-              id: 'KA-01-F-1234',
-              route: 'R1',
-              driverName: 'Rajesh Kumar',
-              conductorName: 'Priya Singh',
-              capacity: 40,
-              passengerCount: 0,
-              status: 'running',
-              lastUpdate: new Date().toISOString(),
-            },
-            {
-              id: 'KA-01-F-5678',
-              route: 'R2',
-              driverName: 'Amit Patel',
-              conductorName: 'Deepak Verma',
-              capacity: 45,
-              passengerCount: 0,
-              status: 'running',
-              lastUpdate: new Date().toISOString(),
-            },
-            {
-              id: 'KA-01-G-2345',
-              route: 'R3',
-              driverName: 'Vikram Singh',
-              conductorName: 'Arjun Das',
-              capacity: 35,
-              passengerCount: 0,
-              status: 'idle',
-              lastUpdate: new Date().toISOString(),
-            },
-            {
-              id: 'KA-01-G-6789',
-              route: 'R4',
-              driverName: 'Sanjay Rao',
-              conductorName: 'Suresh Kumar',
-              capacity: 45,
-              passengerCount: 0,
-              status: 'running',
-              lastUpdate: new Date().toISOString(),
-            },
-          ]
-          setBuses(dummyBuses)
-          localStorage.setItem('depot_buses', JSON.stringify(dummyBuses))
-        }
+        const [busesRes, routesRes, incidentsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/buses`),
+          fetch(`${API_BASE_URL}/api/routes`),
+          fetch(`${API_BASE_URL}/api/incidents`),
+        ])
 
-        // Load routes
-        const storedRoutes = localStorage.getItem('depot_routes')
-        if (storedRoutes) {
-          setRoutes(JSON.parse(storedRoutes))
-        } else {
-          const dummyRoutes = [
-            {
-              id: 'R1',
-              name: 'University Express',
-              stops: ['City Center', 'Engineering College', 'Arts University', 'Medical College', 'Tech Park'],
-              busCount: 1,
-              distance: 18,
-              fare: 15,
-            },
-            {
-              id: 'R2',
-              name: 'City Circular',
-              stops: ['Central Station', 'Market', 'Hospital', 'Mall', 'Airport'],
-              busCount: 1,
-              distance: 22,
-              fare: 25,
-            },
-            {
-              id: 'R3',
-              name: 'School Special',
-              stops: ['Residential Zone', 'Primary School', 'Secondary School', 'International School'],
-              busCount: 1,
-              distance: 12,
-              fare: 10,
-            },
-            {
-              id: 'R4',
-              name: 'Metro Connect',
-              stops: ['Metro North', 'Bus Depot', 'IT Hub', 'SEZ', 'Port'],
-              busCount: 1,
-              distance: 20,
-              fare: 30,
-            },
-          ]
-          setRoutes(dummyRoutes)
-          localStorage.setItem('depot_routes', JSON.stringify(dummyRoutes))
-        }
-
-        // Load incidents
-        const storedIncidents = localStorage.getItem('depot_incidents')
-        if (storedIncidents) {
-          setIncidents(JSON.parse(storedIncidents))
-        } else {
-          const dummyIncidents = [
-            {
-              id: 'INC-001',
-              busId: 'KA-01-F-1234',
-              type: 'SOS',
-              description: 'Passenger medical emergency',
-              status: 'pending',
-              timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-            },
-            {
-              id: 'INC-002',
-              busId: 'KA-01-G-6789',
-              type: 'Breakdown',
-              description: 'Engine overheating issue',
-              status: 'resolved',
-              timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
-            },
-            {
-              id: 'INC-003',
-              busId: 'KA-01-F-5678',
-              type: 'Complaint',
-              description: 'Reckless driving reported',
-              status: 'pending',
-              timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
-            },
-          ]
-          setIncidents(dummyIncidents)
-          localStorage.setItem('depot_incidents', JSON.stringify(dummyIncidents))
-        }
+        if (busesRes.ok) setBuses(await busesRes.json())
+        if (routesRes.ok) setRoutes(await routesRes.json())
+        if (incidentsRes.ok) setIncidents(await incidentsRes.json())
 
         setLoading(false)
       } catch (error) {
-        console.error('Error loading depot data:', error)
+        console.error('Error loading depot data from API:', error)
         setLoading(false)
       }
     }
@@ -182,24 +64,9 @@ export function DepotProvider({ children }) {
     loadData()
   }, [])
 
-  // Polling for ticket updates from the ticket server
   useEffect(() => {
-    const pollTickets = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/tickets')
-        if (response.ok) {
-          const data = await response.json()
-          setTickets(data)
-        }
-      } catch (error) {
-        console.error('Error polling tickets:', error)
-      }
-    }
-
-    pollTickets()
-    const interval = setInterval(pollTickets, 5000)
-    return () => clearInterval(interval)
-  }, [])
+    setTickets(syncedTickets)
+  }, [syncedTickets])
 
   // Update buses based on ticket data
   useEffect(() => {
@@ -249,13 +116,19 @@ export function DepotProvider({ children }) {
       timestamp: new Date().toISOString(),
     }
     setIncidents((prev) => [newIncident, ...prev])
-    localStorage.setItem('depot_incidents', JSON.stringify([newIncident, ...incidents]))
-  }, [incidents])
+    fetch(`${API_BASE_URL}/api/incidents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newIncident),
+    }).catch((error) => {
+      console.error('Error creating incident:', error)
+    })
+  }, [])
 
   const resolveIncident = useCallback((incidentId) => {
     if (incidentId.startsWith('INC-ALERT-')) {
       const alertId = incidentId.replace('INC-ALERT-', '')
-      fetch(`http://localhost:3001/api/alerts/${alertId}`, {
+      fetch(`${API_BASE_URL}/api/alerts/${alertId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'resolved' }),
@@ -265,12 +138,17 @@ export function DepotProvider({ children }) {
       return
     }
 
-    setIncidents((prev) => {
-      const updated = prev.map((inc) =>
+    setIncidents((prev) =>
+      prev.map((inc) =>
         inc.id === incidentId ? { ...inc, status: 'resolved' } : inc
       )
-      localStorage.setItem('depot_incidents', JSON.stringify(updated))
-      return updated
+    )
+    fetch(`${API_BASE_URL}/api/incidents/${incidentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'resolved' }),
+    }).catch((error) => {
+      console.error('Error resolving incident:', error)
     })
   }, [])
 
@@ -280,6 +158,13 @@ export function DepotProvider({ children }) {
         bus.id === busId ? { ...bus, status: newStatus, lastUpdate: new Date().toISOString() } : bus
       )
     )
+    fetch(`${API_BASE_URL}/api/buses/${busId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, lastUpdate: new Date().toISOString() }),
+    }).catch((error) => {
+      console.error('Error updating bus status:', error)
+    })
   }, [])
 
   const updateBusConductor = useCallback((busId, conductorName, driverName) => {
@@ -288,10 +173,12 @@ export function DepotProvider({ children }) {
         bus.id === busId ? { ...bus, conductorName, driverName, lastUpdate: new Date().toISOString() } : bus
       )
     )
-    // Save to localStorage
-    setBuses((currentBuses) => {
-      localStorage.setItem('depot_buses', JSON.stringify(currentBuses))
-      return currentBuses
+    fetch(`${API_BASE_URL}/api/buses/${busId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conductorName, driverName, lastUpdate: new Date().toISOString() }),
+    }).catch((error) => {
+      console.error('Error updating bus crew:', error)
     })
   }, [])
 

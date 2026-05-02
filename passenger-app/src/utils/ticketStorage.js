@@ -3,7 +3,8 @@
  * Used by Passenger App - communicates with ticket-server.js
  */
 
-const API_URL = 'http://localhost:3001/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+const API_URL = `${API_BASE_URL}/api`
 const STORAGE_KEY = 'citybus_tickets'
 const STORAGE_EVENT = 'citybus:ticketsUpdated'
 

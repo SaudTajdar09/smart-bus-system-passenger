@@ -5,6 +5,8 @@ import { TrackMapSvg } from '../components/passenger/TrackMapSvg.jsx'
 import { LiveBusCard } from '../components/passenger/LiveBusCard.jsx'
 import { BUSES, ROUTES } from '../data/cityBusData.js'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
 export function Track() {
   const [liveTickets, setLiveTickets] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -13,7 +15,7 @@ export function Track() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/tickets')
+        const response = await fetch(`${API_BASE_URL}/api/tickets`)
         if (response.ok) {
           const tickets = await response.json()
           setLiveTickets(tickets)

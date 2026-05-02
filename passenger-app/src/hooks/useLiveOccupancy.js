@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { BUSES } from '../data/cityBusData.js'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+
 export function useLiveOccupancy(routeId, busId) {
   // Get bus capacity from static data
   const bus = busId ? BUSES.find(b => b.id === busId) : BUSES.find(b => b.route === routeId)
@@ -16,7 +18,7 @@ export function useLiveOccupancy(routeId, busId) {
   useEffect(() => {
     const fetchOccupancy = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/tickets')
+        const response = await fetch(`${API_BASE_URL}/api/tickets`)
         if (response.ok) {
           const tickets = await response.json()
           
