@@ -7,13 +7,13 @@ let memoryServer = null
 export async function connectDB() {
   try {
     await mongoose.connect(env.mongoUri)
-    console.log(`MongoDB connected at ${env.mongoUri}`)
+    console.log('MongoDB connected successfully')
     return
   } catch (error) {
     if (!env.allowInMemoryMongo) {
       throw error
     }
-    console.warn(`MongoDB unavailable at ${env.mongoUri}; starting in-memory MongoDB`)
+    console.warn('MongoDB unavailable; starting in-memory MongoDB')
   }
 
   if (!memoryServer) {
